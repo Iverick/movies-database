@@ -1,6 +1,13 @@
+from uuid import uuid4
+
 from django.conf import settings
 from django.db import models
 from django.db.models.aggregates import Sum
+
+
+def movie_directory_path_with_uuid(instance, filename):
+    # used to generate the uploaded file's name
+    return '{}/{}'.format(instance.movie_id, uuid4())
 
 
 class MovieManager(models.Manager):
@@ -9,7 +16,8 @@ class MovieManager(models.Manager):
     '''
     def all_with_related_persons(self):
         '''
-        This method prefetches all related objects of Person model. 
+        This method prefetches all related objects of Person model.
+        (extracts list of directors, writers, actors) 
         Uses select_related() method for director field because this
         field has a one to many relation.
         '''
@@ -23,9 +31,19 @@ class MovieManager(models.Manager):
         qs = qs.annotate(score=Sum('vote__value'))
         return qs
 
+    def top_movies(self, limit=10):
+        qs = self.get_queryset()
+        qs = qs.annotate(vote_sum=Sum('vote__value'))
+        qs = qs.exclude(vote_sum=None)
+        qs = qs.order_by('-vote_sum')
+        qs = qs[:limit]
+        return qs
+
 
 class Movie(models.Model):
-
+    '''
+    Model.Movie
+    '''
     NOT_RATED = 0
     RATED_G = 1
     RATED_PG = 2
@@ -68,6 +86,19 @@ class Movie(models.Model):
 
     def __str__(self):
         return '{} ({})'.format(self.title, self.year)
+
+
+class MovieImage(models.Model):
+    '''
+    Model.MovieImage
+    '''
+    image = models.ImageField(upload_to=movie_directory_path_with_uuid)
+    uploaded = models.DateTimeField(auto_now_add=True)
+    movie = models.ForeignKey('Movie', on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
 
 
 class PersonManager(models.Manager):

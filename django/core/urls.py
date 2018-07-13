@@ -11,9 +11,19 @@ urlpatterns = [
         name='MovieList'
     ),
     path(
+        'movies/top',
+        views.TopMovies.as_view(),
+        name='TopMovies'
+    ),
+    path(
         'movie/<int:pk>',
         views.MovieDetail.as_view(),
         name='MovieDetail'
+    ),
+    path(
+        'movie/<int:movie_id>/image/upload',
+        views.MovieImageUpload.as_view(),
+        name='MovieImageUpload'
     ),
     path(
         'movie/<int:movie_id>/vote',
